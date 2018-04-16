@@ -5,7 +5,7 @@
  * A dynamic, browser-based visualization library.
  *
  * @version 4.21.0
- * @date    2018-04-12
+ * @date    2018-04-16
  *
  * @license
  * Copyright (C) 2011-2017 Almende B.V, http://almende.com
@@ -6614,6 +6614,7 @@ function TimeAxis(body, options) {
     }, // axis orientation: 'top' or 'bottom'
     showMinorLabels: true,
     showMajorLabels: true,
+    showWeekNumbers: false,
     maxMinorChars: 7,
     format: TimeStep.FORMAT,
     moment: moment,
@@ -6642,7 +6643,7 @@ TimeAxis.prototype = new Component();
 TimeAxis.prototype.setOptions = function (options) {
   if (options) {
     // copy all options that we know
-    util.selectiveExtend(['showMinorLabels', 'showMajorLabels', 'maxMinorChars', 'hiddenDates', 'timeAxis', 'moment', 'rtl'], this.options, options);
+    util.selectiveExtend(['showMinorLabels', 'showMajorLabels', 'showWeekNumbers', 'maxMinorChars', 'hiddenDates', 'timeAxis', 'moment', 'rtl'], this.options, options);
 
     // deep copy the format options
     util.selectiveDeepExtend(['format'], this.options, options);
@@ -10786,7 +10787,8 @@ function TimeStep(start, end, minimumStep, hiddenDates, options) {
   this.step = 1;
 
   // initialize the range
-  this.setRange(start, end, minimumStep);
+  var showWeekNumbers = options ? options.showWeekNumbers : false;
+  this.setRange(start, end, minimumStep, showWeekNumbers);
 
   // hidden Dates options
   this.switchedDay = false;
@@ -10865,7 +10867,7 @@ TimeStep.prototype.setFormat = function (format) {
  * @param {Date} [end]        The end date and time.
  * @param {int} [minimumStep] Optional. Minimum step size in milliseconds
  */
-TimeStep.prototype.setRange = function (start, end, minimumStep) {
+TimeStep.prototype.setRange = function (start, end, minimumStep, showWeekNumbers) {
   if (!(start instanceof Date) || !(end instanceof Date)) {
     throw "No legal start or end date in method setRange";
   }
@@ -10874,7 +10876,7 @@ TimeStep.prototype.setRange = function (start, end, minimumStep) {
   this._end = end != undefined ? this.moment(end.valueOf()) : new Date();
 
   if (this.autoScale) {
-    this.setMinimumStep(minimumStep);
+    this.setMinimumStep(minimumStep, showWeekNumbers);
   }
 };
 
@@ -11087,7 +11089,7 @@ TimeStep.prototype.setAutoScale = function (enable) {
  * Automatically determine the scale that bests fits the provided minimum step
  * @param {number} [minimumStep]  The minimum step size in milliseconds
  */
-TimeStep.prototype.setMinimumStep = function (minimumStep) {
+TimeStep.prototype.setMinimumStep = function (minimumStep, showWeekNumbers) {
   if (minimumStep == undefined) {
     return;
   }
@@ -11130,11 +11132,17 @@ TimeStep.prototype.setMinimumStep = function (minimumStep) {
   if (stepMonth > minimumStep) {
     this.scale = 'month';this.step = 1;
   }
-  if (stepDay * 5 > minimumStep) {
-    this.scale = 'day';this.step = 5;
-  }
-  if (stepDay * 2 > minimumStep) {
-    this.scale = 'day';this.step = 2;
+  if (showWeekNumbers) {
+    if (stepDay * 7 > minimumStep) {
+      this.scale = 'week';this.step = 1;
+    }
+  } else {
+    if (stepDay * 5 > minimumStep) {
+      this.scale = 'day';this.step = 5;
+    }
+    if (stepDay * 2 > minimumStep) {
+      this.scale = 'day';this.step = 2;
+    }
   }
   if (stepDay > minimumStep) {
     this.scale = 'day';this.step = 1;
@@ -21264,6 +21272,7 @@ var allOptions = {
   showCurrentTime: { 'boolean': bool },
   showMajorLabels: { 'boolean': bool },
   showMinorLabels: { 'boolean': bool },
+  showWeekNumbers: { 'boolean': bool },
   stack: { 'boolean': bool },
   stackSubgroups: { 'boolean': bool },
   snap: { 'function': 'function', 'null': 'null' },
@@ -21369,6 +21378,7 @@ var configureOptions = {
     showCurrentTime: false,
     showMajorLabels: true,
     showMinorLabels: true,
+    showWeekNumbers: false,
     stack: true,
     stackSubgroups: true,
     //snap: {'function': 'function', nada},
